@@ -15,7 +15,7 @@ import 'package:package_info/package_info.dart';
 const bool isRelease = bool.fromEnvironment("dart.vm.product");
 final String apiUrl = isRelease
     ? 'https://altlimit-api.appspot.com/applauncher'
-    : 'https://altlimit-api.appspot.com/applauncher';
+    : 'http://localhost:8080/applauncher';
 
 final String settingsDrawerRight = 'drawer_right';
 final String settingsDrawer = 'drawer';

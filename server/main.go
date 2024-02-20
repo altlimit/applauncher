@@ -28,7 +28,7 @@ func init() {
 
 	e.GET("/applauncher/cron", func(c echo.Context) error {
 		ctx := MakeContext(c)
-		a := &Application{ID: "com.altlimit.applauncherplus"}
+		a := &Application{ID: "com.google.android.calendar"}
 		if c.QueryParam("failtest") == "1" {
 			a.ID += "1"
 		}

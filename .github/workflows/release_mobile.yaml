@@ -1,13 +1,15 @@
-name: Release Mobile
+name: Publish APK
 on:
   push:
-    tags:
-      - 'v**-mobile'
+    paths:
+      - "!web/**"
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
-    name: Create Mobile Release
+    name: Build and publish apk
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -20,18 +22,11 @@ jobs:
         with:
           flutter-version: '3.16.9'
           channel: 'stable'
-      - name: Extract tag name
-        id: tag
-        uses: actions/github-script@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            return context.payload.ref.split('/v').pop().replace(/-mobile/, '');
       - name: Set flutter version
         uses: jacobtomlinson/gha-find-replace@master
         with:
           find: "version: 1\\.0\\.0\\+1"
-          replace: "version: ${{ fromJSON(steps.tag.outputs.result) }}+1${{ github.run_number }}"
+          replace: "version: v2.5.${{ github.run_number }}"
           include: "pubspec.yaml"
       - name: Replace package Paid
         uses: jacobtomlinson/gha-find-replace@master
@@ -46,67 +41,32 @@ jobs:
           echo -e "${{ secrets.KEY_PROPERTIES }}" >> android/key.properties
       - name: Build mobile
         run: |
-          flutter build appbundle
+          flutter build apk --split-per-abi
       - name: Prepare builds
         run: |
-          mv build/app/outputs/bundle/release/app-release.aab build/applauncherpaid.aab
-      - name: Replace package Free
-        uses: jacobtomlinson/gha-find-replace@master
-        with:
-          find: "applicationId \".+\""
-          replace: "applicationId \"com.altlimit.applauncherfree\""
-          include: "android/app/build.gradle"
-      - name: Build mobile
-        run: |
-          flutter build appbundle
-      - name: Prepare builds
-        run: |
-          mv build/app/outputs/bundle/release/app-release.aab build/applauncherfree.aab
+          mv build/app/outputs/bundle/flutter-apk build/apks
       - uses: actions/setup-node@v2
         with:
           node-version: 14
-      - name: Install npm deps
-        run: npm install execa@5.1.1
       - name: Upload to Release Page
         uses: actions/github-script@v4
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const fs = require('fs').promises;
-            const execa = require('execa');
-            const { repo: { owner, repo }, sha } = context;
-            const releaseName = process.env.GITHUB_REF.split('/').pop();
-            const { stdout } = await execa('git', ['tag', '-l', "--format=%(contents:subject)", releaseName]);
+            const { repo: { owner, repo }, sha, runNumber } = context;
             const release = await github.repos.createRelease({
                 owner, repo,
-                tag_name: releaseName,
-                name: 'Mobile ' + releaseName,
+                name: 'Mobile v2.5.' + runNumber,
                 draft: false,
-                body: stdout,
                 target_commitish: sha
             });
-            for (let file of await fs.readdir('./build')) {
-                if (file.indexOf('.aab') !== -1)
+            for (let file of await fs.readdir('./build/apks')) {
+                if (file.indexOf('.apk') !== -1)
                 await github.repos.uploadReleaseAsset({
                     owner, repo,
                     release_id: release.data.id,
                     name: file,
-                    data: await fs.readFile(`./build/${file}`)
+                    data: await fs.readFile(`./build/apks/${file}`)
                 });
             }
-      - name: Publish to Google Play Paid
-        uses: r0adkll/upload-google-play@v1.0.15
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
-          packageName: com.altlimit.applauncherplus
-          releaseFiles: build/applauncherpaid.aab
-          track: production
-          whatsNewDirectory: whatsnew
-      - name: Publish to Google Play Free
-        uses: r0adkll/upload-google-play@v1.0.15
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_SERVICE_ACCOUNT }}
-          packageName: com.altlimit.applauncherfree
-          releaseFiles: build/applauncherfree.aab
-          track: production
-          whatsNewDirectory: whatsnew
