@@ -42,7 +42,7 @@ jobs:
           flutter build apk --split-per-abi
       - name: Prepare builds
         run: |
-          mv build/app/outputs/bundle/flutter-apk build/apks
+          mv build/app/outputs/flutter-apk build/apks
       - uses: actions/setup-node@v2
         with:
           node-version: 14
