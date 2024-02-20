@@ -1,0 +1,4 @@
+cron:
+- description: "applauncher checker"
+  url: /applauncher/cron
+  schedule: every 12 hours
