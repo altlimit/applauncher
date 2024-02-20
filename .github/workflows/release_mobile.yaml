@@ -1,8 +1,6 @@
 name: Publish APK
 on:
   push:
-    paths:
-      - "!web/**"
     branches:
       - main
   workflow_dispatch:
@@ -26,7 +24,7 @@ jobs:
         uses: jacobtomlinson/gha-find-replace@master
         with:
           find: "version: 1\\.0\\.0\\+1"
-          replace: "version: v2.5.0+${{ github.run_number }}"
+          replace: "version: 2.5.${{ github.run_number }}"
           include: "pubspec.yaml"
       - name: Replace package Paid
         uses: jacobtomlinson/gha-find-replace@master
@@ -57,7 +55,7 @@ jobs:
             const { repo: { owner, repo }, sha, runNumber } = context;
             const release = await github.repos.createRelease({
                 owner, repo,
-                name: 'Mobile v2.5.0+' + runNumber,
+                name: 'Mobile v2.5.' + runNumber,
                 draft: false,
                 target_commitish: sha
             });
