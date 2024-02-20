@@ -53,9 +53,10 @@ jobs:
           script: |
             const fs = require('fs').promises;
             const { repo: { owner, repo }, sha, runNumber } = context;
+            const tag_name = 'v2.5.' + runNumber;
             const release = await github.repos.createRelease({
-                owner, repo,
-                name: 'Mobile v2.5.' + runNumber,
+                owner, repo, tag_name,
+                name: 'Mobile ' + tag_name,
                 draft: false,
                 target_commitish: sha
             });
