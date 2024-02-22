@@ -15,7 +15,7 @@ import 'package:package_info/package_info.dart';
 const bool isRelease = bool.fromEnvironment("dart.vm.product");
 final String apiUrl = isRelease
     ? 'https://altlimit-api.appspot.com/applauncher'
-    : 'http://localhost:8080/applauncher';
+    : 'https://altlimit-api.appspot.com/applauncher';
 
 final String settingsDrawerRight = 'drawer_right';
 final String settingsDrawer = 'drawer';
@@ -685,26 +685,24 @@ class DBProvider {
             launchCount: 0,
             lastLaunch: 0);
         batch.insert(tableAppItem, appItem.toMap());
+        hasChanged = true;
       }
     });
+    await batch.commit(noResult: false);
 
     if (packages.length > 0) {
       // some apps have been uninstalled let's delete it from database
       hasChanged = true;
       var packageIds = "'" + packages.keys.join("','") + "'";
-      batch.rawDelete(
+      await db.rawDelete(
           'DELETE FROM $tableAppItem WHERE $columnAppItemPackage IN ($packageIds)');
       packages.clear();
     }
-
-    await batch.commit();
-
     // Get all apps with category_id NULL
     rows = await db.rawQuery("""
     SELECT $columnAppItemId,$columnAppItemPackage FROM $tableAppItem
       WHERE $columnAppItemCategoryId IS NULL or $columnAppItemCategoryId = ''
     """);
-
     if (rows.length > 0) {
       // Get missing packages category
       rows.forEach((row) {
@@ -715,39 +713,37 @@ class DBProvider {
           body: {'apps': packages.keys.join(',')});
       if (response.statusCode == 200) {
         Map<String, dynamic> pInfo = json.decode(response.body);
-        if (pInfo.length > 0) {
-          var foundPackages = "'" + pInfo.values.join("','") + "'";
-          rows = await db.rawQuery("""
-            SELECT $columnCategoryId,$columnCategoryKey FROM $tableCategory
-            WHERE $columnCategoryKey IN ($foundPackages) OR $columnCategoryKey LIKE '--%--'
-            """);
-          var packageMap = Map<String?, int?>();
-          rows.forEach((row) {
-            packageMap[row[columnCategoryKey] as String] =
-                row[columnCategoryId] as int?;
-          });
-          var batch = db.batch();
-          var miscAppIds = new List<int?>.empty(growable: true);
-          packages.forEach((k, v) {
-            var isMisc = !pInfo.containsKey(k);
-            if (isMisc) {
-              miscAppIds.add(v);
-            }
-            batch.update(
-                tableAppItem,
-                {
-                  columnAppItemCategoryId:
-                      packageMap[isMisc ? miscCategory : pInfo[k!]],
-                },
-                where: '$columnAppItemId = ?',
-                whereArgs: [v]);
-          });
-          await batch.commit();
-          // Now process misc category locally see if we see any better results
-          if (miscAppIds.length > 0) {
-            var miscApps = await getAppsBy(ids: miscAppIds);
-            await autoDetectCategory(miscApps);
+        var foundPackages = "'" + pInfo.values.join("','") + "'";
+        rows = await db.rawQuery("""
+          SELECT $columnCategoryId,$columnCategoryKey FROM $tableCategory
+          WHERE $columnCategoryKey IN ($foundPackages) OR $columnCategoryKey LIKE '--%--'
+          """);
+        var packageMap = Map<String?, int?>();
+        rows.forEach((row) {
+          packageMap[row[columnCategoryKey] as String] =
+              row[columnCategoryId] as int?;
+        });
+        var batch = db.batch();
+        var miscAppIds = new List<int?>.empty(growable: true);
+        packages.forEach((k, v) {
+          var isMisc = !pInfo.containsKey(k);
+          if (isMisc) {
+            miscAppIds.add(v);
           }
+          batch.update(
+              tableAppItem,
+              {
+                columnAppItemCategoryId:
+                    packageMap[isMisc ? miscCategory : pInfo[k!]],
+              },
+              where: '$columnAppItemId = ?',
+              whereArgs: [v]);
+        });
+        await batch.commit();
+        // Now process misc category locally see if we see any better results
+        if (miscAppIds.length > 0) {
+          var miscApps = await getAppsBy(ids: miscAppIds);
+          await autoDetectCategory(miscApps);
         }
       }
     }
@@ -811,6 +807,10 @@ class Util {
 
   static void launchPremium() async {
     await launchPlayStore('com.altlimit.applauncherplus');
+  }
+
+  static Future launchAbout() async {
+    await launchUri('https://github.com/altlimit/applauncher');
   }
 
   static Future launchPlayStore(String package) async {

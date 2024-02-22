@@ -243,7 +243,7 @@ class _SettingsPage extends State<SettingsPage> with Store {
         subtitle: Text(
             'v' + _version + ' BUILD:' + _buildNumber + ' PKG:' + _packageName),
         onTap: () {
-          Util.launchPlayStore(_packageName);
+          Util.launchAbout();
         },
       ));
     }
