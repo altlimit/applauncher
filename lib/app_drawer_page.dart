@@ -153,9 +153,9 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((Duration duration) async {
       var totalApps = await _db.getAppsCount();
       if (totalApps == 0) {
-        _refreshIndicatorKey.currentState!.show();
+        await _refreshIndicatorKey.currentState!.show();
       } else {
-        _loadApps();
+        await _loadApps();
       }
     });
     updatePrefs();

@@ -685,19 +685,19 @@ class DBProvider {
             launchCount: 0,
             lastLaunch: 0);
         batch.insert(tableAppItem, appItem.toMap());
-        hasChanged = true;
       }
     });
-    await batch.commit(noResult: false);
 
     if (packages.length > 0) {
       // some apps have been uninstalled let's delete it from database
       hasChanged = true;
       var packageIds = "'" + packages.keys.join("','") + "'";
-      await db.rawDelete(
+      batch.rawDelete(
           'DELETE FROM $tableAppItem WHERE $columnAppItemPackage IN ($packageIds)');
       packages.clear();
     }
+    await batch.commit(noResult: false);
+
     // Get all apps with category_id NULL
     rows = await db.rawQuery("""
     SELECT $columnAppItemId,$columnAppItemPackage FROM $tableAppItem
