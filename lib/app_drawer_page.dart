@@ -172,7 +172,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
     int? categoryId = await Util.platform.invokeMethod(
         'getParam', <String, dynamic>{'key': 'category_id', 'type': 'int'});
     debugPrint('_checkCategoryParam: ' + categoryId.toString());
-    if (categoryId == 0) {
+    if (categoryId == 0 || categoryId == null && _selectedCategory != null) {
       return; // didn't do anything
     }
     // Reset stuff when it's coming from category shortcut

@@ -661,6 +661,8 @@ class DBProvider {
     // Update or insert built-in categories
     upsertCategories(mixedCategories, cats, batch, CategoryItem.TYPE_MIXED);
     upsertCategories(packageCategories, cats, batch, CategoryItem.TYPE_PACKAGE);
+    if (!initialImport)
+      await batch.commit(noResult: false);
 
     apps.forEach((app) async {
       if (packages.containsKey(app.packageName)) {
@@ -684,19 +686,23 @@ class DBProvider {
             hidden: false,
             launchCount: 0,
             lastLaunch: 0);
-        batch.insert(tableAppItem, appItem.toMap());
+        if (initialImport)
+          batch.insert(tableAppItem, appItem.toMap());
+        else
+          await db.insert(tableAppItem, appItem.toMap());
       }
     });
+    if (initialImport)
+      await batch.commit(noResult: false);
 
     if (packages.length > 0) {
       // some apps have been uninstalled let's delete it from database
       hasChanged = true;
       var packageIds = "'" + packages.keys.join("','") + "'";
-      batch.rawDelete(
+      await db.rawDelete(
           'DELETE FROM $tableAppItem WHERE $columnAppItemPackage IN ($packageIds)');
       packages.clear();
     }
-    await batch.commit(noResult: false);
 
     // Get all apps with category_id NULL
     rows = await db.rawQuery("""
