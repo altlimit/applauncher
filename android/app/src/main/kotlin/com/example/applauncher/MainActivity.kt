@@ -2,8 +2,6 @@ package com.example.applauncher
 
 import android.util.Log
 import androidx.annotation.NonNull
-import io.flutter.embedding.android.FlutterActivityLaunchConfigs
-import io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -27,10 +25,6 @@ import android.graphics.drawable.AdaptiveIconDrawable;
 class MainActivity: FlutterActivity() {
     private val LOGTAG = "AppLauncher";
     private var currentIntent: Intent? = null;
-
-    override fun getBackgroundMode(): FlutterActivityLaunchConfigs.BackgroundMode {
-        return BackgroundMode.transparent
-    }
   
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
       super.configureFlutterEngine(flutterEngine)
