@@ -1,10 +1,11 @@
 import 'dart:math';
 
+import 'package:applauncher/store.dart';
 import 'package:flutter/material.dart';
 import 'package:applauncher/app_model.dart';
 import 'package:applauncher/app_icon.dart';
 
-class AppGrid extends StatelessWidget {
+class AppGrid extends StatelessWidget with Store {
   final List<AppItem>? apps;
   final Map<String, dynamic>? config;
 
@@ -27,7 +28,8 @@ class AppGrid extends StatelessWidget {
     return OrientationBuilder(builder: (context, orientation) {
       var xCount = 5 * (orientation == Orientation.portrait ? 1 : 2);
       return GridView.builder(
-        primary: true,
+        controller: appDrawerState!.appGridController,
+        // primary: true,
         itemCount: apps!.length,
         padding: EdgeInsets.all(getDouble('padding', 10.0)!),
         shrinkWrap: false,

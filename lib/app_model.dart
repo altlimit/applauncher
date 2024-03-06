@@ -22,6 +22,7 @@ final String settingsDrawer = 'drawer';
 final String settingsDarkMode = 'dark_mode';
 final String settingsAppSort = 'app_sort';
 final String settingsPrivacyAccepted = 'privacy_accepted';
+final String settingsLaunchKey = 'launch_key';
 
 final String miscCategory = '--Misc--';
 final String gamesCategory = '--Games--';

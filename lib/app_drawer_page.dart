@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
@@ -27,6 +26,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
     return KeyEventResult.handled;
   },);
 
+  late ScrollController appGridController;
   List<int> appLoc = [-1, 0];
   List<AppItem>? _apps;
   List<CategoryItem>? _categories;
@@ -38,7 +38,6 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
   Completer<Null>? _isCategorizing;
   AppSort? _appSort;
   AppItem? selectedApp;
-
   bool isSelecting = false;
   int? shortcutSupport = -1;
 
@@ -146,6 +145,10 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     super.initState();
 
+    appGridController = new ScrollController(
+      initialScrollOffset: 0.0,
+      keepScrollOffset: true,
+    );
     isSelecting = false;
     _isDrawerRight = false;
     _apps = new List<AppItem>.empty(growable: true);
@@ -269,7 +272,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
     if (_scaffoldKey.currentState != null && event.runtimeType.toString() == "RawKeyDownEvent") {
       var orient = MediaQuery.of(context).orientation;
       var maxX = orient == Orientation.portrait ? 4 : 9;
-      var maxY = (_apps!.length / maxX).floor() - 1;
+      var maxY = (filteredApps()!.length / (maxX + 1)).floor() - 1;
       var state = _scaffoldKey.currentState!;
       var key = event.logicalKey.keyLabel;
       if (key == "Arrow Left") {
@@ -289,20 +292,25 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
       } else if (key == "Arrow Down") {
         if (appLoc[0] == -1)
           appLoc[0] = 0;
-        if (appLoc[1] < maxY - 1)
+        if (appLoc[1] < maxY)
           appLoc[1]++;
       } else if (key == "Arrow Up") {
         if (appLoc[1] > 0)
           appLoc[1]--;
-      } else if (key == "Enter" && selectedApp != null) {
-        selectedApp!.openApp();
-        selectedApp = null;
-        appLoc[0] = -1;
-        appLoc[1] = 0;
+      } else if (selectedApp != null) {
+        var keyCode = Preference.getInt(settingsLaunchKey);
+        if (key == "Enter" || keyCode != null && keyCode == event.logicalKey.keyId) {
+          selectedApp!.openApp();
+          selectedApp = null;
+          appLoc[0] = -1;
+          appLoc[1] = 0;
+        }
       }
+      var itemHeight = appGridController.position.maxScrollExtent / maxY;
+      appGridController.animateTo(appLoc[1] * itemHeight, duration: Duration(milliseconds: 100), curve: Curves.linear);
       setState(() {
         appLoc = appLoc;
-      });      
+      });
     }
   }
 
@@ -519,7 +527,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
                   } else {
                     setState(() {
                       _isSearching = true;
-                    });
+                    });                    
                   }
                 },
                 child: _isSearching

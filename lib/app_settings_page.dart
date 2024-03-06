@@ -11,6 +11,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPage extends State<SettingsPage> with Store {
   final _db = DBProvider();
+  final _focusNode = FocusNode();
 
   late bool _isLoaded;
   late bool _isDrawerRight;
@@ -93,6 +94,32 @@ class _SettingsPage extends State<SettingsPage> with Store {
       },
     );
   }
+
+  Future<void> _showKeyPressDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Register Launch Key'),
+          content: RawKeyboardListener(
+            autofocus: true,
+            onKey: (event) {
+              if (event.runtimeType.toString() == "RawKeyDownEvent") {
+                var key = event.logicalKey.keyId;
+                Preference.setInt(settingsLaunchKey, key);
+                Navigator.of(context).pop();
+              }
+            },
+            focusNode: _focusNode,
+            child: SingleChildScrollView(
+              child: Text('Press any key'),
+            )
+          )
+        );
+      },
+    );
+  }  
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +213,14 @@ class _SettingsPage extends State<SettingsPage> with Store {
                           columnCategoryHidden: false
                         }))));
           },
-        )
+        ),
+        ListTile(
+          title: const Text('Launch Key'),
+          subtitle: const Text('Set launch key'),
+          onTap: () async {
+            await _showKeyPressDialog();
+          },
+        )        
         // ListTile(
         //   title: Text('Drawer Settings'),
         //   subtitle: Text('Configure app drawer settings.'),
