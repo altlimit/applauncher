@@ -1,17 +1,24 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:android_intent/android_intent.dart';
 import 'package:applauncher/app_model.dart';
 import 'package:applauncher/store.dart';
 
 class AppIcon extends StatelessWidget with Store {
-  AppIcon({this.appItem});
+  AppIcon({this.appItem, this.coord});
 
   final AppItem? appItem;
+  final Point? coord;
 
   // Used for displaying an actual app and it's image and handle the onTap event
   @override
   Widget build(BuildContext context) {
     var isDarkMode = Preference.getBool(settingsDarkMode);
+    var selected = coord != null && appDrawerState!.appLoc[0] == coord!.x && appDrawerState!.appLoc[1] == coord!.y;
+    if (selected) {
+      appDrawerState!.selectedApp = appItem;
+    }
     return GestureDetector(
         onTap: () {
           if (appDrawerState!.isSelecting) {
@@ -84,12 +91,12 @@ class AppIcon extends StatelessWidget with Store {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
-            Container(
-                decoration: appDrawerState!.isSelecting && appItem!.selected
+            Expanded(child:Container(
+                decoration: appDrawerState!.isSelecting && appItem!.selected || selected
                     ? BoxDecoration(color: Colors.blueGrey)
                     : null,
-                padding: EdgeInsets.all(10.0),
-                child: Image.memory(appItem!.icon!, fit: BoxFit.fitHeight)),
+                padding: EdgeInsets.all(10.0),                
+                child: Image.memory(appItem!.icon!, fit: BoxFit.fill))),
             Text(
               appItem!.name!,
               style: TextStyle(

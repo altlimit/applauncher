@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:flutter/material.dart';
@@ -21,7 +22,12 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
   final DBProvider _db = DBProvider();
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+  final FocusNode _focusNode = FocusNode(onKey: (node, event) {
+    return KeyEventResult.handled;
+  },);
 
+  List<int> appLoc = [-1, 0];
   List<AppItem>? _apps;
   List<CategoryItem>? _categories;
   CategoryItem? _selectedCategory;
@@ -31,6 +37,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
   Completer<Null>? _isLoading;
   Completer<Null>? _isCategorizing;
   AppSort? _appSort;
+  AppItem? selectedApp;
 
   bool isSelecting = false;
   int? shortcutSupport = -1;
@@ -61,6 +68,8 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
   setCategory(CategoryItem? category) async {
     setState(() {
       _selectedCategory = category;
+      appLoc[0] = -1;
+      appLoc[1] = 0;
     });
 
     debugPrint(
@@ -221,6 +230,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focusNode.dispose();
     _db.close();
     super.dispose();
   }
@@ -253,6 +263,47 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
           (_selectedCategory != null ? ' for ' + _selectedCategory!.name! : '');
     }
     return _selectedCategory != null ? _selectedCategory!.name : widget.title;
+  }
+
+  void _handleKeyEvent(RawKeyEvent event) {
+    if (_scaffoldKey.currentState != null && event.runtimeType.toString() == "RawKeyDownEvent") {
+      var orient = MediaQuery.of(context).orientation;
+      var maxX = orient == Orientation.portrait ? 4 : 9;
+      var maxY = (_apps!.length / maxX).floor() - 1;
+      var state = _scaffoldKey.currentState!;
+      var key = event.logicalKey.keyLabel;
+      if (key == "Arrow Left") {
+        if (appLoc[0] <= 0) {
+          appLoc[0] = 0;
+          state.openDrawer();
+        } else {
+          appLoc[0]--;
+        }
+      } else if (key == "Arrow Right") {
+        if (appLoc[0] >= maxX) {
+          appLoc[0] = maxX;
+          state.openEndDrawer();
+        } else {
+          appLoc[0]++;
+        }
+      } else if (key == "Arrow Down") {
+        if (appLoc[0] == -1)
+          appLoc[0] = 0;
+        if (appLoc[1] < maxY - 1)
+          appLoc[1]++;
+      } else if (key == "Arrow Up") {
+        if (appLoc[1] > 0)
+          appLoc[1]--;
+      } else if (key == "Enter" && selectedApp != null) {
+        selectedApp!.openApp();
+        selectedApp = null;
+        appLoc[0] = -1;
+        appLoc[1] = 0;
+      }
+      setState(() {
+        appLoc = appLoc;
+      });      
+    }
   }
 
   void _showPrivacyAcceptDialog() {
@@ -311,6 +362,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
         return new Future(() => allow);
       },
       child: Scaffold(
+          key: _scaffoldKey,
           appBar: AppBar(
             title: Text(appBarTitle()!),
             actions: <Widget>[
@@ -448,12 +500,14 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
                     ),
                   ))
               : null,
-          body: RefreshIndicator(
+          body: RawKeyboardListener(
+            onKey: _handleKeyEvent,
+            child: RefreshIndicator(
               key: _refreshIndicatorKey,
               onRefresh: _loadApps,
               child: AppGrid(
                 apps: filteredApps(),
-              )),
+              )), focusNode: _focusNode,autofocus: true,),
           floatingActionButton: Container(
               padding: MediaQuery.of(context).viewInsets.bottom > 0
                   ? EdgeInsets.only(bottom: 42.0)
