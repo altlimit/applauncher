@@ -272,7 +272,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
     if (_scaffoldKey.currentState != null && event.runtimeType.toString() == "RawKeyDownEvent") {
       var orient = MediaQuery.of(context).orientation;
       var maxX = orient == Orientation.portrait ? 4 : 9;
-      var maxY = (filteredApps()!.length / (maxX + 1)).floor() - 1;
+      var maxY = (filteredApps()!.length / (maxX + 1)).ceil() - 1;
       var state = _scaffoldKey.currentState!;
       var key = event.logicalKey.keyLabel;
       if (key == "Arrow Left") {
@@ -306,7 +306,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
           appLoc[1] = 0;
         }
       }
-      var itemHeight = appGridController.position.maxScrollExtent / maxY;
+      double itemHeight = maxY > 0 ? appGridController.position.maxScrollExtent / maxY : 0;
       appGridController.animateTo(appLoc[1] * itemHeight, duration: Duration(milliseconds: 100), curve: Curves.linear);
       setState(() {
         appLoc = appLoc;
