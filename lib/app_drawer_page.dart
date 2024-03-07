@@ -23,7 +23,13 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
       new GlobalKey<RefreshIndicatorState>();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
   final FocusNode _focusNode = FocusNode(onKey: (node, event) {
-    return KeyEventResult.handled;
+    var key = event.logicalKey.keyLabel;
+    var keyId = event.logicalKey.keyId;
+    var keyCode = Preference.getInt(settingsLaunchKey);
+    if (['Arrow Up', 'Arrow Down', 'Arrow Left', 'Arrow Right', 'Enter'].contains(key) ||
+      keyCode != null && keyCode == keyId)
+      return KeyEventResult.handled;
+    return KeyEventResult.ignored;
   },);
 
   late ScrollController appGridController;
@@ -193,6 +199,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
       setState(() {
         _isSearching = false;
       });
+      _focusNode.requestFocus();
     }
     if (isSelecting) {
       _toggleSelecting();
@@ -354,6 +361,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
           setState(() {
             _isSearching = false;
           });
+          _focusNode.requestFocus();
           allow = false;
         } else if (isSelecting) {
           _toggleSelecting();
@@ -503,6 +511,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
                                     _searchKey = '';
                                     _isSearching = false;
                                   });
+                                  _focusNode.requestFocus();
                                 })),
                       ),
                     ),
@@ -515,7 +524,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
               onRefresh: _loadApps,
               child: AppGrid(
                 apps: filteredApps(),
-              )), focusNode: _focusNode,autofocus: true,),
+              )), focusNode: _focusNode, autofocus: true),
           floatingActionButton: Container(
               padding: MediaQuery.of(context).viewInsets.bottom > 0
                   ? EdgeInsets.only(bottom: 42.0)
@@ -525,6 +534,7 @@ class AppDrawerState extends State<AppDrawerPage> with WidgetsBindingObserver {
                   if (_isSearching) {
                     Util.launchPlayStoreSearch(_searchKey!);
                   } else {
+                    _focusNode.unfocus();
                     setState(() {
                       _isSearching = true;
                     });                    
